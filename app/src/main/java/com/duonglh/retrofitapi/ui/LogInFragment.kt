@@ -6,23 +6,21 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.view.isGone
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import com.duonglh.retrofitapi.R
+import com.duonglh.retrofitapi.data.Error
 import com.duonglh.retrofitapi.data.Result
 import com.duonglh.retrofitapi.databinding.FragmentLogInBinding
 import com.duonglh.retrofitapi.di.Injector
-import com.google.android.material.snackbar.Snackbar
 
 class LogInFragment : Fragment() {
 
-    private val viewModel: MainViewModel by viewModels {
-        Injector.provideMainViewModelFactory(requireContext())
+    private val viewModel: ShareViewModel by viewModels{
+        Injector.provideShareViewModelFactory(requireContext())
     }
-
     private lateinit var binding: FragmentLogInBinding
-
-
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -34,31 +32,69 @@ class LogInFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        viewModel.statusLogin.observe(viewLifecycleOwner){ status ->
-            when(status){
-                is Result.Loading -> {
-                    // loading here
-                }
-                is Result.Success -> {
-                    findNavController().navigate(R.id.action_logInFragment_to_userFragment)
-                }
-                is Result.Error -> {
-                    binding.loginPassword.error = status.messageException
-                }
-                else -> {
-                    Snackbar.make(view,"Error",500).show()
+        with(binding) {
+            viewModel.loginWithToken().observe(viewLifecycleOwner){ status->
+                when(status){
+                    is Result.Loading -> {
+                        loginProgressBar.visibility = View.VISIBLE
+                    }
+                    is Result.Success -> {
+                        loginProgressBar.visibility = View.GONE
+                        findNavController().navigate(R.id.action_logInFragment_to_userFragment)
+                    }
+                    else -> {
+                        loginProgressBar.visibility = View.GONE
+                    }
                 }
             }
-        }
-
-        binding.apply {
             btnLogin.setOnClickListener {
-                val email = loginEmail.editText?.text.toString().trim()
-                val password = loginPassword.editText?.text.toString()
-                viewModel.logInUser(email, password)
+                if(loginProgressBar.isGone){
+                    val email = loginEmail.editText?.text.toString().trim()
+                    val password = loginPassword.editText?.text.toString()
+                    viewModel.login(email, password).observe(viewLifecycleOwner){ status ->
+                        when(status){
+                            is Result.Loading -> {
+                                loginProgressBar.visibility = View.VISIBLE
+                            }
+                            is Result.Success -> {
+                                loginProgressBar.visibility = View.GONE
+                                findNavController().navigate(R.id.action_logInFragment_to_userFragment)
+                            }
+                            is Result.Error -> {
+                                loginProgressBar.visibility = View.GONE
+                                when(status.message){
+                                    Error.EMAIl_INVALID -> {
+                                        binding.loginEmail.error = "Email invalid"
+                                        binding.loginEmail.editText?.text = null
+                                        binding.loginPassword.editText?.text = null
+                                    }
+                                    Error.WRONG_PASSWORD -> {
+                                        binding.loginPassword.error = "Wrong Password"
+                                        binding.loginPassword.editText?.text = null
+                                    }
+                                    else -> {
+                                        binding.loginPassword.error = "Not Found"
+                                        binding.loginPassword.editText?.text = null
+                                    }
+                                }
+                            }
+                            else -> {
+                                binding.loginPassword.error = "Error occur when login"
+                            }
+                        }
+                    }
+                }
             }
+
             btnToSignup.setOnClickListener {
                 findNavController().navigate(R.id.action_logInFragment_to_signUpFragment)
+            }
+            loginEmail.editText?.setOnFocusChangeListener { _, _ ->
+                loginPassword.error = null
+                loginEmail.error = null
+            }
+            loginPassword.editText?.setOnFocusChangeListener { _, _ ->
+                loginPassword.error = null
             }
         }
     }

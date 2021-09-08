@@ -5,9 +5,11 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.view.isGone
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import com.duonglh.retrofitapi.R
+import com.duonglh.retrofitapi.data.Error
 import com.duonglh.retrofitapi.data.Result
 import com.duonglh.retrofitapi.databinding.FragmentSignUpBinding
 import com.duonglh.retrofitapi.di.Injector
@@ -16,8 +18,8 @@ import com.google.android.material.snackbar.Snackbar
 
 class SignUpFragment : Fragment() {
 
-    private val viewModel: MainViewModel by viewModels{
-        Injector.provideMainViewModelFactory(requireContext())
+    private val viewModel: ShareViewModel by viewModels{
+        Injector.provideShareViewModelFactory(requireContext())
     }
     private lateinit var binding: FragmentSignUpBinding
 
@@ -32,43 +34,78 @@ class SignUpFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        viewModel.statusPost.observe(viewLifecycleOwner){ status ->
-            when(status){
-                is Result.Loading -> {
-                    // add loading pls
-                }
-                is Result.Success -> {
-                    findNavController().navigate(R.id.action_signUpFragment_to_logInFragment)
-                }
-                is Result.Error -> {
-                    when(val error = status.messageException){
-                        "Email is used" -> binding.signupEmail.error = error
-                        "at least 8 characters" -> binding.signupPassword.error = error
-                        "Wrong Password" -> binding.signupConfirmPassword.error = error
+
+
+        binding.btnSignup.setOnClickListener {
+            if (binding.signupProgressBar.isGone) {
+                val name = binding.signupName.editText?.text.toString()
+                val email = binding.signupEmail.editText?.text.toString()
+                val password = binding.signupPassword.editText?.text.toString()
+                val confirmPassword = binding.signupConfirmPassword.editText?.text.toString()
+                viewModel.register(name, email, password, confirmPassword).observe(viewLifecycleOwner){ status ->
+                    when(status){
+                        is Result.Loading -> {
+                            binding.signupProgressBar.visibility = View.VISIBLE
+                        }
+                        is Result.Success -> {
+                            binding.signupProgressBar.visibility = View.GONE
+                            findNavController().navigate(R.id.action_signUpFragment_to_logInFragment)
+                        }
+                        is Result.Error -> {
+                            with(binding){
+                                signupProgressBar.visibility = View.GONE
+                                clearError()
+                                when(status.message){
+                                    Error.WRONG_FORMAT_PASSWORD -> {
+                                        signupPassword.error = "At least 6 characters"
+                                        signupConfirmPassword.editText?.text = null
+                                    }
+                                    Error.WRONG_PASSWORD -> {
+                                        signupConfirmPassword.error = "Wrong Password"
+                                    }
+                                    Error.EMAIl_INVALID -> {
+                                        signupEmail.error = "Email Invalid"
+                                        signupPassword.editText?.text = null
+                                        signupConfirmPassword.editText?.text = null
+                                    }
+                                    Error.EMAIL_HAS_USED -> {
+                                        signupEmail.error = "Email has been used"
+                                        signupPassword.editText?.text = null
+                                        signupConfirmPassword.editText?.text = null
+                                    }
+                                }
+                            }
+                        }
                         else -> {
-                            binding.signupEmail.error = null
-                            binding.signupPassword.error = null
-                            binding.signupConfirmPassword.error = null
+                            Snackbar.make(view,"Error",500).show()
                         }
                     }
-                }
-                else -> {
-                    Snackbar.make(view,"Error",500).show()
                 }
             }
         }
 
-        binding.btnSignup.setOnClickListener {
-            val email = binding.signupEmail.editText?.text.toString()
-            val password = binding.signupPassword.editText?.text.toString()
-            val confirmPassword = binding.signupConfirmPassword.editText?.text.toString()
-            viewModel.confirmUser(email, password, confirmPassword)
+        with(binding){
+            btnToLogin.setOnClickListener {
+                findNavController().navigate(R.id.action_signUpFragment_to_logInFragment)
+            }
+            signupEmail.editText?.setOnFocusChangeListener { _, _ ->
+                signupEmail.error = null
+            }
+            signupPassword.editText?.setOnFocusChangeListener { _, _ ->
+                signupPassword.error = null
+            }
+            signupConfirmPassword.editText?.setOnFocusChangeListener { _, _ ->
+                signupConfirmPassword.error = null
+            }
         }
+    }
 
-        binding.btnToLogin.setOnClickListener {
-            findNavController().navigate(R.id.action_signUpFragment_to_logInFragment)
+    private fun clearError(){
+        with(binding){
+            signupEmail.error = null
+            signupPassword.error = null
+            signupConfirmPassword.error = null
         }
-
     }
 
 }

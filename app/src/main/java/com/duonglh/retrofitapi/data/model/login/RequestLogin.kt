@@ -1,4 +1,6 @@
-package com.duonglh.retrofitapi.data.model
+package com.duonglh.retrofitapi.data.model.login
 
-class RequestLogin {
-}
+data class RequestLogin(
+    val email: String,
+    val password: String
+)

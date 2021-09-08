@@ -13,24 +13,20 @@ import com.duonglh.retrofitapi.data.repository.UserRepository
 import com.duonglh.retrofitapi.data.repository.toMD5Hash
 import com.duonglh.retrofitapi.data.Error
 import com.duonglh.retrofitapi.data.model.user.PostUser
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.lang.Exception
 import java.security.SecureRandom
+import kotlin.random.Random
 
-class MainViewModel(
-    private val repository: UserRepository,
-    private val prefs: Prefs
-    ) : ViewModel() {
-    private val TAG = "MainViewModel"
+class ShareViewModel(private val repository: UserRepository) : ViewModel() {
+    private val TAG = "ShareViewModel"
 
     private val _user = MutableLiveData<User>()
     val user: LiveData<User> = _user
+    private var isOpenApp: Boolean = true
 
-    fun login(email: String, password: String): LiveData<Result<Any>> = liveData{
+    fun login(email: String, password: String): LiveData<Result<Any>> = liveData(Dispatchers.IO){
         emit((Result.Loading))
         repository.getTokenKey(RequestLogin(email, password)).collect {
             when(it){
@@ -38,15 +34,11 @@ class MainViewModel(
                 is Result.Success -> {
                     val token = it.data
                     try {
-                        viewModelScope.async(Dispatchers.IO){
-                            Log.d(TAG, "getUser")
-                            val user = repository.getUser(token as String)
-                            withContext(Dispatchers.Main){
-                                _user.postValue(user)
-                            }
-                        }.await()
-                        emit(Result.Success(_user.value!!))
-                        Log.d(TAG, "emit User ${user.value}")
+                        val user = repository.getUser(token as String)
+                        _user.postValue(user)
+                        emit(Result.Success(user))
+                        repository.saveTokenToDevice(token)
+                        Log.d(TAG, "emit User ${_user.value}")
                     }catch (e: Exception){
                         Log.e(TAG, "Error loginUser")
                         emit(Result.Error(Error.NOT_FOUND))
@@ -60,7 +52,7 @@ class MainViewModel(
     }
 
     fun register(name: String, email: String, password: String, confirmPassword: String): LiveData<Result<Any>>
-    = liveData {
+    = liveData(Dispatchers.IO) {
         emit(Result.Loading)
         when {
             password.length < 6 -> emit(Result.Error(Error.WRONG_FORMAT_PASSWORD))
@@ -73,11 +65,35 @@ class MainViewModel(
                 val user = PostUser(name, token)
                 repository.registerAccount(account)
                 repository.postUser(user)
+                emit(Result.Success(user))
+                repository.saveTokenToDevice(token)
             }
         }
     }
 
-    
+    fun loginWithToken(): LiveData<Result<Any>> = liveData(Dispatchers.IO){
+        emit(Result.Loading)
+        Log.d(TAG, "is open app: $isOpenApp")
+        if(isOpenApp){
+            isOpenApp = false
+            val currentToken = repository.getCurrentToken()
+            if (currentToken != null){
+                try {
+                    Log.d(TAG,"current Token: $currentToken")
+                    val user = repository.getUser(currentToken)
+                    _user.postValue(user)
+                    emit(Result.Success(user))
+                    Log.d(TAG, "emit User@ ${_user.value}")
+                }catch (e: Exception){
+                    emit(Result.Error(Error.NOT_FOUND))
+                }
+            }else{
+                emit(Result.Error("No Token"))
+            }
+        }else{
+            emit(Result.Error("No Open App"))
+        }
+    }
 
     private fun getSalt(): ByteArray{
         val sr = SecureRandom.getInstance("SHA1PRNG")
@@ -88,6 +104,20 @@ class MainViewModel(
 
     private fun genToken(strToken: String): String{
         return strToken.toMD5Hash(getSalt())
+    }
+
+    companion object{
+        private var instance: ShareViewModel? = null
+        fun getInstance(repository: UserRepository): ShareViewModel{
+            return instance ?: ShareViewModel(repository).also { instance = it }
+        }
+    }
+
+    fun clearToken(){
+        CoroutineScope(Dispatchers.IO).launch {
+            repository.saveTokenToDevice(null)
+            Log.d(TAG,"cleared Token")
+        }
     }
 
 }

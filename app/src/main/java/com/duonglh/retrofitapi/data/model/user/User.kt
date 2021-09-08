@@ -1,4 +1,4 @@
-package com.duonglh.retrofitapi.data.model
+package com.duonglh.retrofitapi.data.model.user
 
 import com.google.gson.annotations.SerializedName
 
