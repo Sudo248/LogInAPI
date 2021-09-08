@@ -1,0 +1,93 @@
+package com.duonglh.retrofitapi.ui
+
+import android.util.Log
+import androidx.lifecycle.LiveData
+
+import androidx.lifecycle.*
+import com.duonglh.retrofitapi.data.Result
+import com.duonglh.retrofitapi.data.model.login.RequestLogin
+import com.duonglh.retrofitapi.data.model.login.RequestRegister
+import com.duonglh.retrofitapi.data.model.user.User
+import com.duonglh.retrofitapi.data.prefs.Prefs
+import com.duonglh.retrofitapi.data.repository.UserRepository
+import com.duonglh.retrofitapi.data.repository.toMD5Hash
+import com.duonglh.retrofitapi.data.Error
+import com.duonglh.retrofitapi.data.model.user.PostUser
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.lang.Exception
+import java.security.SecureRandom
+
+class MainViewModel(
+    private val repository: UserRepository,
+    private val prefs: Prefs
+    ) : ViewModel() {
+    private val TAG = "MainViewModel"
+
+    private val _user = MutableLiveData<User>()
+    val user: LiveData<User> = _user
+
+    fun login(email: String, password: String): LiveData<Result<Any>> = liveData{
+        emit((Result.Loading))
+        repository.getTokenKey(RequestLogin(email, password)).collect {
+            when(it){
+                is Result.Error -> emit(it)
+                is Result.Success -> {
+                    val token = it.data
+                    try {
+                        viewModelScope.async(Dispatchers.IO){
+                            Log.d(TAG, "getUser")
+                            val user = repository.getUser(token as String)
+                            withContext(Dispatchers.Main){
+                                _user.postValue(user)
+                            }
+                        }.await()
+                        emit(Result.Success(_user.value!!))
+                        Log.d(TAG, "emit User ${user.value}")
+                    }catch (e: Exception){
+                        Log.e(TAG, "Error loginUser")
+                        emit(Result.Error(Error.NOT_FOUND))
+                    }
+                }
+                else ->{
+                    Log.e(TAG, "Error loginUser")
+                }
+            }
+        }
+    }
+
+    fun register(name: String, email: String, password: String, confirmPassword: String): LiveData<Result<Any>>
+    = liveData {
+        emit(Result.Loading)
+        when {
+            password.length < 6 -> emit(Result.Error(Error.WRONG_FORMAT_PASSWORD))
+            password != confirmPassword -> emit(Result.Error(Error.WRONG_PASSWORD))
+            repository.checkEmailHasUsed(email) -> emit(Result.Error(Error.EMAIl_INVALID))
+            else -> {
+                val hashPassword = password.toMD5Hash()
+                val token = genToken(email+password)
+                val account = RequestRegister(email, hashPassword, token)
+                val user = PostUser(name, token)
+                repository.registerAccount(account)
+                repository.postUser(user)
+            }
+        }
+    }
+
+    
+
+    private fun getSalt(): ByteArray{
+        val sr = SecureRandom.getInstance("SHA1PRNG")
+        val salt = ByteArray(16)
+        sr.nextBytes(salt)
+        return salt
+    }
+
+    private fun genToken(strToken: String): String{
+        return strToken.toMD5Hash(getSalt())
+    }
+
+}
