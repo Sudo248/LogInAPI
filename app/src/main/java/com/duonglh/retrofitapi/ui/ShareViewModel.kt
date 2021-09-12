@@ -119,5 +119,10 @@ class ShareViewModel(private val repository: UserRepository) : ViewModel() {
             Log.d(TAG,"cleared Token")
         }
     }
+    fun print(){
+        print("hello world")
+        print("hello from Duong")
+        print("hello from Duong2")
+    }
 
 }
