@@ -24,14 +24,15 @@ class UserRepository(
     suspend fun postUser(user: PostUser) = apiService.postUser(user)
     suspend fun registerAccount(requestRegister: RequestRegister) = apiService.registerUser(requestRegister)
 
-    suspend fun getCurrentToken(): String? {
+    fun getCurrentToken(): String? {
         val token = prefs.getToken()
         Log.d("Repository","get Token: $token")
         return token
     }
 
-    suspend fun saveTokenToDevice(token: String?){
+    fun saveTokenToDevice(token: String?){
         Log.d("Repository","Save Token $token")
+
         prefs.saveToken(token)
     }
 

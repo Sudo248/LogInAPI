@@ -6,17 +6,17 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import com.duonglh.retrofitapi.R
 import com.duonglh.retrofitapi.databinding.FragmentUserBinding
-import com.duonglh.retrofitapi.di.Injector
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class UserFragment : Fragment() {
 
-    private val viewModel: ShareViewModel by viewModels{
-        Injector.provideShareViewModelFactory(requireContext())
-    }
+    private val viewModel: ShareViewModel by activityViewModels()
     private lateinit var binding: FragmentUserBinding
 
     override fun onCreateView(
@@ -37,6 +37,7 @@ class UserFragment : Fragment() {
         }
 
         binding.btnLogout.setOnClickListener {
+            viewModel.clearToken()
             findNavController().navigate(R.id.action_userFragment_to_logInFragment)
         }
         binding.btnClear.setOnClickListener {
