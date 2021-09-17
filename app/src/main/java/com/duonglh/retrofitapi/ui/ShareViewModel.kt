@@ -119,5 +119,4 @@ class ShareViewModel(private val repository: UserRepository) : ViewModel() {
             Log.d(TAG,"cleared Token")
         }
     }
-
 }
