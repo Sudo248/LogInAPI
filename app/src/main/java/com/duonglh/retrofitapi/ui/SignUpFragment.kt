@@ -6,21 +6,20 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.view.isGone
+import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import com.duonglh.retrofitapi.R
 import com.duonglh.retrofitapi.data.Error
 import com.duonglh.retrofitapi.data.Result
 import com.duonglh.retrofitapi.databinding.FragmentSignUpBinding
-import com.duonglh.retrofitapi.di.Injector
 import com.google.android.material.snackbar.Snackbar
+import dagger.hilt.android.AndroidEntryPoint
 
-
+@AndroidEntryPoint
 class SignUpFragment : Fragment() {
 
-    private val viewModel: ShareViewModel by viewModels{
-        Injector.provideShareViewModelFactory(requireContext())
-    }
+    private val viewModel: ShareViewModel by activityViewModels()
     private lateinit var binding: FragmentSignUpBinding
 
     override fun onCreateView(
@@ -49,7 +48,7 @@ class SignUpFragment : Fragment() {
                         }
                         is Result.Success -> {
                             binding.signupProgressBar.visibility = View.GONE
-                            findNavController().navigate(R.id.action_signUpFragment_to_logInFragment)
+                            findNavController().navigate(R.id.action_signUpFragment_to_userFragment)
                         }
                         is Result.Error -> {
                             with(binding){

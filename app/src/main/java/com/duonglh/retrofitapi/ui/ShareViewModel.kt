@@ -8,25 +8,27 @@ import com.duonglh.retrofitapi.data.Result
 import com.duonglh.retrofitapi.data.model.login.RequestLogin
 import com.duonglh.retrofitapi.data.model.login.RequestRegister
 import com.duonglh.retrofitapi.data.model.user.User
-import com.duonglh.retrofitapi.data.prefs.Prefs
 import com.duonglh.retrofitapi.data.repository.UserRepository
 import com.duonglh.retrofitapi.data.repository.toMD5Hash
 import com.duonglh.retrofitapi.data.Error
 import com.duonglh.retrofitapi.data.model.user.PostUser
-import kotlinx.coroutines.*
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
 import java.lang.Exception
 import java.security.SecureRandom
-import kotlin.random.Random
+import javax.inject.Inject
 
-class ShareViewModel(private val repository: UserRepository) : ViewModel() {
+@HiltViewModel
+class ShareViewModel @Inject constructor (private val repository: UserRepository) : ViewModel() {
     private val TAG = "ShareViewModel"
-
     private val _user = MutableLiveData<User>()
     val user: LiveData<User> = _user
     private var isOpenApp: Boolean = true
 
-    fun login(email: String, password: String): LiveData<Result<Any>> = liveData(Dispatchers.IO){
+    fun login(email: String, password: String): LiveData<Result<Any>> = liveData(IO){
         emit((Result.Loading))
         repository.getTokenKey(RequestLogin(email, password)).collect {
             when(it){
@@ -52,7 +54,7 @@ class ShareViewModel(private val repository: UserRepository) : ViewModel() {
     }
 
     fun register(name: String, email: String, password: String, confirmPassword: String): LiveData<Result<Any>>
-    = liveData(Dispatchers.IO) {
+    = liveData(IO) {
         emit(Result.Loading)
         when {
             password.length < 6 -> emit(Result.Error(Error.WRONG_FORMAT_PASSWORD))
@@ -62,16 +64,19 @@ class ShareViewModel(private val repository: UserRepository) : ViewModel() {
                 val hashPassword = password.toMD5Hash()
                 val token = genToken(email+password)
                 val account = RequestRegister(email, hashPassword, token)
-                val user = PostUser(name, token)
+                val postUser = PostUser(name, token)
+
                 repository.registerAccount(account)
-                repository.postUser(user)
+                repository.postUser(postUser)
+                val user = repository.getUser(token)
+                _user.postValue(user)
                 emit(Result.Success(user))
                 repository.saveTokenToDevice(token)
             }
         }
     }
 
-    fun loginWithToken(): LiveData<Result<Any>> = liveData(Dispatchers.IO){
+    fun loginWithToken(): LiveData<Result<Any>> = liveData(IO){
         emit(Result.Loading)
         Log.d(TAG, "is open app: $isOpenApp")
         if(isOpenApp){
@@ -106,15 +111,8 @@ class ShareViewModel(private val repository: UserRepository) : ViewModel() {
         return strToken.toMD5Hash(getSalt())
     }
 
-    companion object{
-        private var instance: ShareViewModel? = null
-        fun getInstance(repository: UserRepository): ShareViewModel{
-            return instance ?: ShareViewModel(repository).also { instance = it }
-        }
-    }
-
     fun clearToken(){
-        CoroutineScope(Dispatchers.IO).launch {
+        CoroutineScope(IO).launch {
             repository.saveTokenToDevice(null)
             Log.d(TAG,"cleared Token")
         }

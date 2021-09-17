@@ -7,24 +7,24 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.view.isGone
+import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import com.duonglh.retrofitapi.R
 import com.duonglh.retrofitapi.data.Error
 import com.duonglh.retrofitapi.data.Result
 import com.duonglh.retrofitapi.databinding.FragmentLogInBinding
-import com.duonglh.retrofitapi.di.Injector
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class LogInFragment : Fragment() {
 
-    private val viewModel: ShareViewModel by viewModels{
-        Injector.provideShareViewModelFactory(requireContext())
-    }
+    private val viewModel: ShareViewModel by activityViewModels()
     private lateinit var binding: FragmentLogInBinding
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         binding = FragmentLogInBinding.inflate(inflater,container, false)
         return binding.root
     }
