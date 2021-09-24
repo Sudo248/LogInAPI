@@ -12,5 +12,6 @@ enum class Error{
     EMAIl_INVALID,
     EMAIL_HAS_USED,
     WRONG_FORMAT_PASSWORD,
-    NOT_FOUND
+    NOT_FOUND,
+    SERVER_INVALID
 }

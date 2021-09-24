@@ -2,10 +2,12 @@ package com.duonglh.retrofitapi.ui
 
 import android.os.Bundle
 import android.util.Log
+import android.view.KeyEvent
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.FrameLayout
 import androidx.core.view.isGone
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
@@ -14,13 +16,18 @@ import com.duonglh.retrofitapi.R
 import com.duonglh.retrofitapi.data.Error
 import com.duonglh.retrofitapi.data.Result
 import com.duonglh.retrofitapi.databinding.FragmentLogInBinding
+import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.security.Key
 
 @AndroidEntryPoint
 class LogInFragment : Fragment() {
 
     private val viewModel: ShareViewModel by activityViewModels()
     private lateinit var binding: FragmentLogInBinding
+    private lateinit var frameLoading: FrameLayout
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -31,37 +38,37 @@ class LogInFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
+        frameLoading = requireActivity().findViewById(R.id.frame_loading)
         with(binding) {
             viewModel.loginWithToken().observe(viewLifecycleOwner){ status->
                 when(status){
                     is Result.Loading -> {
-                        loginProgressBar.visibility = View.VISIBLE
+                        frameLoading.visibility = View.VISIBLE
                     }
                     is Result.Success -> {
-                        loginProgressBar.visibility = View.GONE
+                        frameLoading.visibility = View.GONE
                         findNavController().navigate(R.id.action_logInFragment_to_userFragment)
                     }
                     else -> {
-                        loginProgressBar.visibility = View.GONE
+                        frameLoading.visibility = View.GONE
                     }
                 }
             }
             btnLogin.setOnClickListener {
-                if(loginProgressBar.isGone){
+                if(frameLoading.isGone){
                     val email = loginEmail.editText?.text.toString().trim()
                     val password = loginPassword.editText?.text.toString()
                     viewModel.login(email, password).observe(viewLifecycleOwner){ status ->
                         when(status){
                             is Result.Loading -> {
-                                loginProgressBar.visibility = View.VISIBLE
+                                frameLoading.visibility = View.VISIBLE
                             }
                             is Result.Success -> {
-                                loginProgressBar.visibility = View.GONE
+                                frameLoading.visibility = View.GONE
                                 findNavController().navigate(R.id.action_logInFragment_to_userFragment)
                             }
                             is Result.Error -> {
-                                loginProgressBar.visibility = View.GONE
+                                frameLoading.visibility = View.GONE
                                 when(status.message){
                                     Error.EMAIl_INVALID -> {
                                         binding.loginEmail.error = "Email invalid"
@@ -72,9 +79,12 @@ class LogInFragment : Fragment() {
                                         binding.loginPassword.error = "Wrong Password"
                                         binding.loginPassword.editText?.text = null
                                     }
-                                    else -> {
+                                    Error.NOT_FOUND -> {
                                         binding.loginPassword.error = "Not Found"
                                         binding.loginPassword.editText?.text = null
+                                    }
+                                    else -> {
+                                        Snackbar.make(view, "Server Invalid", 2000).show()
                                     }
                                 }
                             }

@@ -5,6 +5,7 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.FrameLayout
 import androidx.core.view.isGone
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
@@ -21,6 +22,7 @@ class SignUpFragment : Fragment() {
 
     private val viewModel: ShareViewModel by activityViewModels()
     private lateinit var binding: FragmentSignUpBinding
+    private lateinit var frameLoading: FrameLayout
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -33,10 +35,9 @@ class SignUpFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
-
+        frameLoading = requireActivity().findViewById(R.id.frame_loading)
         binding.btnSignup.setOnClickListener {
-            if (binding.signupProgressBar.isGone) {
+            if (frameLoading.isGone) {
                 val name = binding.signupName.editText?.text.toString()
                 val email = binding.signupEmail.editText?.text.toString()
                 val password = binding.signupPassword.editText?.text.toString()
@@ -44,15 +45,15 @@ class SignUpFragment : Fragment() {
                 viewModel.register(name, email, password, confirmPassword).observe(viewLifecycleOwner){ status ->
                     when(status){
                         is Result.Loading -> {
-                            binding.signupProgressBar.visibility = View.VISIBLE
+                            frameLoading.visibility = View.VISIBLE
                         }
                         is Result.Success -> {
-                            binding.signupProgressBar.visibility = View.GONE
+                            frameLoading.visibility = View.GONE
                             findNavController().navigate(R.id.action_signUpFragment_to_userFragment)
                         }
                         is Result.Error -> {
                             with(binding){
-                                signupProgressBar.visibility = View.GONE
+                                frameLoading.visibility = View.GONE
                                 clearError()
                                 when(status.message){
                                     Error.WRONG_FORMAT_PASSWORD -> {
@@ -71,6 +72,9 @@ class SignUpFragment : Fragment() {
                                         signupEmail.error = "Email has been used"
                                         signupPassword.editText?.text = null
                                         signupConfirmPassword.editText?.text = null
+                                    }
+                                    else -> {
+                                        Snackbar.make(view,"Server Invalid",2000).show()
                                     }
                                 }
                             }
