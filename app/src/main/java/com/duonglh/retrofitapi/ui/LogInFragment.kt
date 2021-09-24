@@ -84,12 +84,12 @@ class LogInFragment : Fragment() {
                                         binding.loginPassword.editText?.text = null
                                     }
                                     else -> {
-                                        Snackbar.make(view, "Server Invalid", 2000).show()
+                                        Snackbar.make(view, "Server or internet invalid", 2000).show()
                                     }
                                 }
                             }
                             else -> {
-                                binding.loginPassword.error = "Error occur when login"
+                                Snackbar.make(view, "Error occur when login!!", 2000).show()
                             }
                         }
                     }

@@ -55,6 +55,7 @@ class SignUpFragment : Fragment() {
                             with(binding){
                                 frameLoading.visibility = View.GONE
                                 clearError()
+                                clearFocus()
                                 when(status.message){
                                     Error.WRONG_FORMAT_PASSWORD -> {
                                         signupPassword.error = "At least 6 characters"
@@ -74,7 +75,7 @@ class SignUpFragment : Fragment() {
                                         signupConfirmPassword.editText?.text = null
                                     }
                                     else -> {
-                                        Snackbar.make(view,"Server Invalid",2000).show()
+                                        Snackbar.make(view,"Server or internet invalid",2000).show()
                                     }
                                 }
                             }
@@ -108,6 +109,13 @@ class SignUpFragment : Fragment() {
             signupEmail.error = null
             signupPassword.error = null
             signupConfirmPassword.error = null
+        }
+    }
+    private fun clearFocus(){
+        with(binding){
+            signupEmail.editText?.clearFocus()
+            signupPassword.editText?.clearFocus()
+            signupConfirmPassword.editText?.clearFocus()
         }
     }
 

@@ -78,7 +78,7 @@ class UserRepository(
             if (responses.isEmpty()) Result.Error(Error.EMAIl_INVALID)
             else Result.Success(responses[0])
         }catch (e: Exception){
-            Log.d("User Repository", "Server invalid")
+            Log.d("User Repository", "Server invalid or Internet not connect")
             Result.Error(Error.SERVER_INVALID)
         }
     }
