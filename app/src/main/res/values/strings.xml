@@ -4,4 +4,13 @@
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="sign_up"><u>Sign up</u></string>
     <string name="log_in"><u>Log in</u></string>
+    <string name="security">Security</string>
+    <string name="title_sign_up">Sign Up</string>
+    <string name="title_sign_in">Sign In</string>
+    <string name="enter_email">Enter Your Email</string>
+    <string name="password">Password</string>
+    <string name="confirm_password">Confirm password</string>
+    <string name="dont_have_account">Don\'t have an account?</string>
+    <string name="enter_name">Enter Your Name</string>
+    <string name="alreadly_have_account">Already have account?</string>
 </resources>

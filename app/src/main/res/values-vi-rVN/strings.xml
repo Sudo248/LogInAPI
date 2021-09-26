@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">RetrofitAPI</string>
+    <string name="hello_blank_fragment">Chào</string>
+    <string name="sign_up"><u>Đăng kí</u></string>
+    <string name="log_in"><u>Đăng nhập</u></string>
+    <string name="security">Bảo Mật</string>
+    <string name="title_sign_up">Đăng Kí</string>
+    <string name="title_sign_in">Đăng Nhập</string>
+    <string name="enter_email">Nhập địa chỉ Email</string>
+    <string name="confirm_password">Xác nhận mật khẩu</string>
+    <string name="password">Mật khẩu</string>
+    <string name="dont_have_account">Chưa có tài khoản?</string>
+    <string name="enter_name">Nhập tên</string>
+    <string name="alreadly_have_account">Đã có tài khoản?</string>
+</resources>
